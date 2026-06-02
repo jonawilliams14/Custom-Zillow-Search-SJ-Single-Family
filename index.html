@@ -52,7 +52,7 @@
 <body>
   <main>
     <h1>Jon's Zillow Rental Screening Report</h1>
-    <p class="summary">This report is preconfigured for my personal move search: San Jose, Fremont, or Milpitas Zillow rentals only.</p>
+    <p class="summary">This report auto-loads <code>sample_listings.csv</code> whenever the page refreshes.</p>
     <section class="defaults">
       <strong>Default hard filters:</strong> Zillow listing, San Jose/Fremont/Milpitas, $3,000-$5,000 rent, 1,200+ sqft, 3bd/2ba or 4bd+/2ba, single-family house or townhome. Parks and destination proximity are bonuses.
     </section>
@@ -60,11 +60,11 @@
       <textarea id="csv-input" spellcheck="false" placeholder="address,city,url,image_url,rent,bedrooms,bathrooms,sqft,home_type,lat,lon,parks_nearby,notes"></textarea>
       <div class="actions">
         <button id="generate">Generate report</button>
-        <button id="clear" class="secondary">Clear saved data</button>
+        <button id="reload" class="secondary">Reload CSV from repo</button>
       </div>
       <div id="status" class="status"></div>
     </section>
-    <div id="empty" class="empty">No listings loaded yet. Paste real Zillow listing CSV data with photo URLs and coordinates, then generate the report.</div>
+    <div id="empty" class="empty">No listings loaded yet. Add real rows to <code>sample_listings.csv</code>, then refresh this page.</div>
     <table id="report" hidden>
       <thead><tr><th>Rank</th><th>Photo</th><th>Verdict</th><th>Score</th><th>Rent</th><th>Beds/Baths</th><th>Sqft</th><th>Type</th><th>City</th><th>Address</th><th>Zillow</th><th>SJSU</th><th>VillaSport</th><th>Villa Commute</th><th>Lam Research</th><th>Northrop Drive</th><th>Notes</th></tr></thead>
       <tbody id="report-body"></tbody>
@@ -81,11 +81,9 @@
       lam: ['Lam Research Fremont', '4650 Cushing Pkwy, Fremont, CA 94538', [37.4886, -121.95694]],
       northrop: ['Northrop Grumman Sunnyvale', '401 E Hendy Ave, Sunnyvale, CA 94086', [37.377395, -122.0250165]]
     };
-    const headers = ['address','city','url','image_url','rent','bedrooms','bathrooms','sqft','home_type','lat','lon','parks_nearby','notes'];
     const input = document.getElementById('csv-input');
     const status = document.getElementById('status');
-    const savedCsv = localStorage.getItem('zillow-screening-csv') || '';
-    input.value = savedCsv;
+    const headers = ['address','city','url','image_url','rent','bedrooms','bathrooms','sqft','home_type','lat','lon','parks_nearby','notes'];
     const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
     const isImageUrl = value => /^https?:\/\//i.test(String(value || ''));
     const imageCell = (url, address) => isImageUrl(url) ? `<img class="photo" src="${escapeHtml(url)}" alt="${escapeHtml(address)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'no-photo',textContent:'Photo unavailable'}))">` : '<span class="no-photo">No photo</span>';
@@ -126,6 +124,18 @@
     const commute = d => Math.round(((d * 1.3) / (d * 1.3 <= 8 ? 24 : d * 1.3 <= 18 ? 32 : 40)) * 60);
     const cells = values => values.map(([label, value]) => `<td data-label="${label}">${value}</td>`).join('');
     const toNumber = value => Number(String(value || '').replace(/[$,]/g, '')) || 0;
+    const loadCsvFromRepo = async () => {
+      status.textContent = 'Loading sample_listings.csv...';
+      try {
+        const response = await fetch(`sample_listings.csv?ts=${Date.now()}`, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        input.value = await response.text();
+        render();
+      } catch (error) {
+        status.textContent = `Could not load sample_listings.csv: ${error.message}`;
+        render();
+      }
+    };
     const render = () => {
       const parsed = parseCsv(input.value).map(row => ({
         address: row.address,
@@ -141,10 +151,9 @@
         parks: toNumber(row.parks_nearby),
         notes: row.notes
       })).filter(row => row.origin[0] && row.origin[1]);
-      localStorage.setItem('zillow-screening-csv', input.value);
       document.getElementById('empty').hidden = parsed.length > 0;
       document.getElementById('report').hidden = parsed.length === 0;
-      status.textContent = parsed.length ? `${parsed.length} listing${parsed.length === 1 ? '' : 's'} loaded.` : 'No valid listing rows found. Include real lat/lon values.';
+      status.textContent = parsed.length ? `${parsed.length} listing${parsed.length === 1 ? '' : 's'} loaded from sample_listings.csv.` : 'No valid listing rows found in sample_listings.csv. Add real rows with lat/lon values.';
       const rows = parsed.map(row => {
         const city = row.city.toLowerCase();
         const type = row.type.toLowerCase();
@@ -195,8 +204,8 @@
       ])}</tr>`).join('');
     };
     document.getElementById('generate').addEventListener('click', render);
-    document.getElementById('clear').addEventListener('click', () => { input.value = ''; localStorage.removeItem('zillow-screening-csv'); render(); });
-    if (savedCsv) render();
+    document.getElementById('reload').addEventListener('click', loadCsvFromRepo);
+    loadCsvFromRepo();
   </script>
 </body>
 </html>
