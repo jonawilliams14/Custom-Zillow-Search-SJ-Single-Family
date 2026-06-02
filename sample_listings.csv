@@ -1,0 +1,5 @@
+address,city,url,rent,bedrooms,bathrooms,sqft,home_type,lat,lon,parks_nearby,notes
+123 Example Ct,Milpitas,https://www.zillow.com/,4100,3,2,1450,townhome,37.4323,-121.8996,2,Near neighborhood park and BART
+456 Sample Ave,San Jose,https://www.zillow.com/,4950,4,2.5,1800,single family,37.3387,-121.8853,1,Larger layout in preferred city
+789 Small Pl,Fremont,https://www.zillow.com/,3500,3,1.5,1100,townhome,37.5485,-121.9886,1,Too small and not enough baths
+321 Luxury Rd,Sunnyvale,https://www.zillow.com/,5600,4,3,1900,single family,37.3688,-122.0363,2,Good area but over budget
