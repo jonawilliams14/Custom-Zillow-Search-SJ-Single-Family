@@ -9,6 +9,7 @@ import html
 import math
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import quote_plus
 
 PREFERRED_CITIES = {"san jose", "milpitas"}
 ACCEPTABLE_CITIES = {"fremont", "sunnyvale", "santa clara", "newark", "cupertino"}
@@ -88,6 +89,15 @@ def destination_distance(listing: Listing, key: str) -> float | None:
     return None if listing_coords is None else haversine_miles(listing_coords, DESTINATIONS[key][2])
 
 
+def maps_url(listing: Listing, key: str) -> str | None:
+    listing_coords = coords(listing)
+    if listing_coords is None:
+        return None
+    origin = f"{listing_coords[0]:.6f},{listing_coords[1]:.6f}"
+    destination = quote_plus(DESTINATIONS[key][1])
+    return f"https://www.google.com/maps/dir/?api=1&origin={origin}&destination={destination}&travelmode=driving"
+
+
 def villa_commute_minutes(distance_miles: float | None) -> int | None:
     if distance_miles is None:
         return None
@@ -102,6 +112,21 @@ def fmt_distance(distance_miles: float | None) -> str:
 
 def fmt_commute(minutes: int | None) -> str:
     return "n/a" if minutes is None else f"~{minutes} min"
+
+
+def markdown_distance(listing: Listing, key: str, distance_miles: float | None) -> str:
+    text = fmt_distance(distance_miles)
+    url = maps_url(listing, key)
+    return text if url is None else f"[{text}]({url})"
+
+
+def html_distance(listing: Listing, key: str, distance_miles: float | None) -> str:
+    text = fmt_distance(distance_miles)
+    url = maps_url(listing, key)
+    if url is None:
+        return html.escape(text)
+    label = html.escape(DESTINATIONS[key][0])
+    return f'<a class="maps-link" href="{html.escape(url, quote=True)}" target="_blank" rel="noopener noreferrer" title="Open Google Maps directions to {label}">{html.escape(text)}</a>'
 
 
 def bedroom_bath_fit(listing: Listing) -> bool:
@@ -209,13 +234,16 @@ def markdown_report(listings: list[Listing]) -> str:
     ]
     for rank, (score, item_verdict, listing, reasons) in enumerate(ranked_listings(listings), start=1):
         address = f"[{listing.address}]({listing.url})" if listing.url else listing.address
+        sjsu_distance = destination_distance(listing, "sjsu")
         villa_distance = destination_distance(listing, "villa_sport")
+        lam_distance = destination_distance(listing, "lam_research")
         lines.append(
-            f"| {rank} | {item_verdict} | {score} | ${listing.rent:,} | {listing.bedrooms}/{listing.bathrooms:g} | {listing.sqft:,} | {listing.home_type} | {listing.city} | {address} | {fmt_distance(destination_distance(listing, 'sjsu'))} | {fmt_distance(villa_distance)} | {fmt_commute(villa_commute_minutes(villa_distance))} | {fmt_distance(destination_distance(listing, 'lam_research'))} | {'; '.join(reasons)} |"
+            f"| {rank} | {item_verdict} | {score} | ${listing.rent:,} | {listing.bedrooms}/{listing.bathrooms:g} | {listing.sqft:,} | {listing.home_type} | {listing.city} | {address} | {markdown_distance(listing, 'sjsu', sjsu_distance)} | {markdown_distance(listing, 'villa_sport', villa_distance)} | {fmt_commute(villa_commute_minutes(villa_distance))} | {markdown_distance(listing, 'lam_research', lam_distance)} | {'; '.join(reasons)} |"
         )
     lines.extend([
         "",
         "Distance values are straight-line estimates. VillaSport commute is a rough driving estimate, not live traffic.",
+        "Click destination distances to open Google Maps driving directions.",
         "",
         "## Follow-up Checklist",
         "",
@@ -237,28 +265,16 @@ def html_report(listings: list[Listing]) -> str:
         sjsu_distance = destination_distance(listing, "sjsu")
         villa_distance = destination_distance(listing, "villa_sport")
         lam_distance = destination_distance(listing, "lam_research")
-        zillow_link = (
-            f'<a class="listing-link" href="{html.escape(listing.url, quote=True)}" target="_blank" rel="noopener noreferrer">Open Zillow</a>'
-            if listing.url else '<span class="missing-link">No link</span>'
-        )
+        zillow_link = f'<a class="listing-link" href="{html.escape(listing.url, quote=True)}" target="_blank" rel="noopener noreferrer">Open Zillow</a>' if listing.url else '<span class="missing-link">No link</span>'
         rows.append(
             "<tr>"
             f"<td>{rank}</td>"
             f'<td><span class="verdict {css_class(item_verdict)}">{html.escape(item_verdict)}</span></td>'
-            f"<td>{score}</td>"
-            f"<td>${listing.rent:,}</td>"
-            f"<td>{listing.bedrooms}/{listing.bathrooms:g}</td>"
-            f"<td>{listing.sqft:,}</td>"
-            f"<td>{html.escape(listing.home_type)}</td>"
-            f"<td>{html.escape(listing.city)}</td>"
-            f"<td>{html.escape(listing.address)}</td>"
-            f"<td>{zillow_link}</td>"
-            f"<td>{fmt_distance(sjsu_distance)}</td>"
-            f"<td>{fmt_distance(villa_distance)}</td>"
-            f"<td>{fmt_commute(villa_commute_minutes(villa_distance))}</td>"
-            f"<td>{fmt_distance(lam_distance)}</td>"
-            f"<td>{html.escape('; '.join(reasons))}</td>"
-            "</tr>"
+            f"<td>{score}</td><td>${listing.rent:,}</td><td>{listing.bedrooms}/{listing.bathrooms:g}</td><td>{listing.sqft:,}</td>"
+            f"<td>{html.escape(listing.home_type)}</td><td>{html.escape(listing.city)}</td><td>{html.escape(listing.address)}</td><td>{zillow_link}</td>"
+            f"<td>{html_distance(listing, 'sjsu', sjsu_distance)}</td><td>{html_distance(listing, 'villa_sport', villa_distance)}</td>"
+            f"<td>{fmt_commute(villa_commute_minutes(villa_distance))}</td><td>{html_distance(listing, 'lam_research', lam_distance)}</td>"
+            f"<td>{html.escape('; '.join(reasons))}</td></tr>"
         )
     return f"""<!doctype html>
 <html lang="en">
@@ -277,13 +293,8 @@ def html_report(listings: list[Listing]) -> str:
     th {{ background: #e6f0f2; color: #243b53; font-weight: 700; }}
     tr:last-child td {{ border-bottom: 0; }}
     .verdict {{ display: inline-block; min-width: 86px; padding: 4px 8px; border-radius: 6px; text-align: center; font-weight: 700; white-space: nowrap; }}
-    .top-fit {{ background: #d8f3dc; color: #1b5e20; }}
-    .worth-touring {{ background: #fff3bf; color: #6c4f00; }}
-    .maybe {{ background: #dbeafe; color: #1e3a8a; }}
-    .reject {{ background: #ffd7d7; color: #8a1f1f; }}
-    .listing-link {{ color: #0b6b75; font-weight: 700; white-space: nowrap; }}
-    .missing-link {{ color: #829ab1; white-space: nowrap; }}
-    .checklist {{ margin-top: 24px; line-height: 1.6; }}
+    .top-fit {{ background: #d8f3dc; color: #1b5e20; }} .worth-touring {{ background: #fff3bf; color: #6c4f00; }} .maybe {{ background: #dbeafe; color: #1e3a8a; }} .reject {{ background: #ffd7d7; color: #8a1f1f; }}
+    .listing-link, .maps-link {{ color: #0b6b75; font-weight: 700; white-space: nowrap; }} .missing-link {{ color: #829ab1; white-space: nowrap; }} .checklist {{ margin-top: 24px; line-height: 1.6; }}
     @media (max-width: 860px) {{ body {{ padding: 16px; }} table {{ display: block; overflow-x: auto; }} th, td {{ min-width: 110px; }} }}
   </style>
 </head>
@@ -292,21 +303,11 @@ def html_report(listings: list[Listing]) -> str:
     <h1>Zillow Rental Screening Report</h1>
     <p class="summary">Criteria: $3,000-$5,000 rent, at least 1,200 sqft, 3bd/2ba or 4bd+/2ba, single-family house or townhome, optimized between Fremont and Sunnyvale with San Jose or Milpitas preferred. Nearby parks add bonus points. Distances to SJSU, VillaSport San Jose, and Lam Research Fremont are included when lat/lon are provided.</p>
     <table>
-      <thead>
-        <tr><th>Rank</th><th>Verdict</th><th>Score</th><th>Rent</th><th>Beds/Baths</th><th>Sqft</th><th>Type</th><th>City</th><th>Address</th><th>Zillow</th><th>SJSU</th><th>VillaSport</th><th>Villa Commute</th><th>Lam Research</th><th>Notes</th></tr>
-      </thead>
+      <thead><tr><th>Rank</th><th>Verdict</th><th>Score</th><th>Rent</th><th>Beds/Baths</th><th>Sqft</th><th>Type</th><th>City</th><th>Address</th><th>Zillow</th><th>SJSU</th><th>VillaSport</th><th>Villa Commute</th><th>Lam Research</th><th>Notes</th></tr></thead>
       <tbody>{''.join(rows)}</tbody>
     </table>
-    <p class="summary">Distance values are straight-line estimates. VillaSport commute is a rough driving estimate, not live traffic.</p>
-    <section class="checklist">
-      <h2>Follow-up Checklist</h2>
-      <ul>
-        <li>Confirm lease terms, pet policy, parking, utilities, HOA restrictions, and move-in costs.</li>
-        <li>Check commute time during the hours you actually travel.</li>
-        <li>Verify nearby parks by map and inspect neighborhood noise/safety in person.</li>
-        <li>Ask whether the listing is still available before scheduling a tour.</li>
-      </ul>
-    </section>
+    <p class="summary">Distance values are straight-line estimates. VillaSport commute is a rough driving estimate, not live traffic. Click destination distances to open Google Maps driving directions.</p>
+    <section class="checklist"><h2>Follow-up Checklist</h2><ul><li>Confirm lease terms, pet policy, parking, utilities, HOA restrictions, and move-in costs.</li><li>Check commute time during the hours you actually travel.</li><li>Verify nearby parks by map and inspect neighborhood noise/safety in person.</li><li>Ask whether the listing is still available before scheduling a tour.</li></ul></section>
   </main>
 </body>
 </html>
