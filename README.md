@@ -20,6 +20,8 @@ This repository hosts a small CSV-in, HTML-out screening tool for rental listing
 
 Open `index.html` in the repository to view the current screening report. If GitHub Pages is enabled for this repository, `index.html` can be served as the project homepage.
 
+The HTML report uses a stacked mobile layout in narrow browsers, so it is easier to scan in Mobile Chrome.
+
 ## How To Use
 
 1. Copy Zillow candidate listings into a CSV using the columns in `sample_listings.csv`.
