@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Zillow Rental Screening Report</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f5f7f8;
+      color: #1f2933;
+    }
+    body {
+      margin: 0;
+      padding: 32px;
+    }
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+      letter-spacing: 0;
+    }
+    .summary {
+      margin: 0 0 24px;
+      max-width: 880px;
+      color: #52606d;
+      line-height: 1.5;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #ffffff;
+      border: 1px solid #d9e2ec;
+    }
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #d9e2ec;
+      text-align: left;
+      vertical-align: top;
+      font-size: 14px;
+    }
+    th {
+      background: #e6f0f2;
+      color: #243b53;
+      font-weight: 700;
+    }
+    tr:last-child td {
+      border-bottom: 0;
+    }
+    .verdict {
+      display: inline-block;
+      min-width: 86px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      text-align: center;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .top-fit {
+      background: #d8f3dc;
+      color: #1b5e20;
+    }
+    .worth-touring {
+      background: #fff3bf;
+      color: #6c4f00;
+    }
+    .maybe {
+      background: #dbeafe;
+      color: #1e3a8a;
+    }
+    .reject {
+      background: #ffd7d7;
+      color: #8a1f1f;
+    }
+    .listing-link {
+      color: #0b6b75;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .missing-link {
+      color: #829ab1;
+      white-space: nowrap;
+    }
+    .checklist {
+      margin-top: 24px;
+      line-height: 1.6;
+    }
+    @media (max-width: 860px) {
+      body {
+        padding: 16px;
+      }
+      table {
+        display: block;
+        overflow-x: auto;
+      }
+      th, td {
+        min-width: 110px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Zillow Rental Screening Report</h1>
+    <p class="summary">
+      Criteria: $3,000-$5,000 rent, at least 1,200 sqft, 3bd/2ba or 4bd+/2ba,
+      single-family house or townhome, optimized between Fremont and Sunnyvale
+      with San Jose or Milpitas preferred. Nearby parks add bonus points.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Verdict</th>
+          <th>Score</th>
+          <th>Rent</th>
+          <th>Beds/Baths</th>
+          <th>Sqft</th>
+          <th>Type</th>
+          <th>City</th>
+          <th>Address</th>
+          <th>Zillow</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td><span class="verdict top-fit">Top fit</span></td><td>105</td><td>$4,100</td><td>3/2</td><td>1,450</td><td>townhome</td><td>Milpitas</td><td>123 Example Ct</td><td><a class="listing-link" href="https://www.zillow.com/" target="_blank" rel="noopener noreferrer">Open Zillow</a></td><td>meets all hard filters; preferred city; near Fremont/Sunnyvale midpoint (6.5 mi); multiple nearby parks; stronger rent value</td></tr><tr><td>2</td><td><span class="verdict top-fit">Top fit</span></td><td>95</td><td>$4,950</td><td>4/2.5</td><td>1,800</td><td>single family</td><td>San Jose</td><td>456 Sample Ave</td><td><a class="listing-link" href="https://www.zillow.com/" target="_blank" rel="noopener noreferrer">Open Zillow</a></td><td>meets all hard filters; preferred city; reasonable corridor distance (10.8 mi); nearby park; larger floor plan</td></tr><tr><td>3</td><td><span class="verdict reject">Reject</span></td><td>13</td><td>$5,600</td><td>4/3</td><td>1,900</td><td>single family</td><td>Sunnyvale</td><td>321 Luxury Rd</td><td><a class="listing-link" href="https://www.zillow.com/" target="_blank" rel="noopener noreferrer">Open Zillow</a></td><td>rent outside $3,000-$5,000; acceptable corridor city; near Fremont/Sunnyvale midpoint (6.3 mi); multiple nearby parks; larger floor plan</td></tr><tr><td>4</td><td><span class="verdict reject">Reject</span></td><td>-11</td><td>$3,500</td><td>3/1.5</td><td>1,100</td><td>townhome</td><td>Fremont</td><td>789 Small Pl</td><td><a class="listing-link" href="https://www.zillow.com/" target="_blank" rel="noopener noreferrer">Open Zillow</a></td><td>under 1,200 sqft; does not meet 3bd/2ba or 4bd+/2ba; acceptable corridor city; near Fremont/Sunnyvale midpoint (6.3 mi); nearby park; stronger rent value</td></tr>
+      </tbody>
+    </table>
+    <section class="checklist">
+      <h2>Follow-up Checklist</h2>
+      <ul>
+        <li>Confirm lease terms, pet policy, parking, utilities, HOA restrictions, and move-in costs.</li>
+        <li>Check commute time during the hours you actually travel.</li>
+        <li>Verify nearby parks by map and inspect neighborhood noise/safety in person.</li>
+        <li>Ask whether the listing is still available before scheduling a tour.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
