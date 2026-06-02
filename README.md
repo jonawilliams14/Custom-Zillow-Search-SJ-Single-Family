@@ -10,6 +10,10 @@ This repository hosts a small CSV-in, HTML-out screening tool for rental listing
 - Type: single-family house or townhome.
 - Location: optimized between Fremont and Sunnyvale, with San Jose or Milpitas preferred.
 - Bonus: nearby parks.
+- Added destination checks:
+  - San Jose State University, One Washington Square, San Jose, CA 95192.
+  - VillaSport San Jose, 1167 N Capitol Ave, San Jose, CA 95132.
+  - Lam Research Fremont, 4650 Cushing Pkwy, Fremont, CA 94538.
 
 ## Hosted Report
 
@@ -37,4 +41,4 @@ python .\screen_zillow_rentals.py .\sample_listings.csv -o .\zillow_screening_re
 
 The first version avoids direct Zillow scraping. That keeps the workflow simpler and less brittle while still automating the actual screening and ranking. You can feed it listings from Zillow saved-search alerts, copied rows, or another compliant listing source.
 
-Latitude and longitude are optional, but including them improves the corridor score between Fremont and Sunnyvale.
+Latitude and longitude are optional, but including them improves the corridor score between Fremont and Sunnyvale. They also enable the SJSU, VillaSport, and Lam Research distance columns. The VillaSport commute column is a rough driving estimate, not live traffic.
