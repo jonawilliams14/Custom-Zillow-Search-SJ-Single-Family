@@ -86,22 +86,21 @@ def main() -> int:
 
     listings: dict[str, dict[str, Any]] = {}
     for city in TARGET_CITIES:
-        for property_type in PROPERTY_TYPES:
-            params = {
-                "city": city,
-                "state": "CA",
-                "status": "Active",
-                "propertyType": property_type,
-                "price": "3000:5000",
-                "bedrooms": "3:",
-                "bathrooms": "2:",
-                "squareFootage": "1200:",
-                "limit": 500,
-            }
-            for item in fetch_json(api_key, params):
-                normalized = normalize_listing(item)
-                if keep_listing(normalized):
-                    listings[str(normalized["id"])] = normalized
+        params = {
+            "city": city,
+            "state": "CA",
+            "status": "Active",
+            "propertyType": ",".join(PROPERTY_TYPES),
+            "price": "3000:5000",
+            "bedrooms": "3:",
+            "bathrooms": "2:",
+            "squareFootage": "1200:",
+            "limit": 500,
+        }
+        for item in fetch_json(api_key, params):
+            normalized = normalize_listing(item)
+            if keep_listing(normalized):
+                listings[str(normalized["id"])] = normalized
 
     payload = {
         "generatedAt": datetime.now(timezone.utc).isoformat(),
