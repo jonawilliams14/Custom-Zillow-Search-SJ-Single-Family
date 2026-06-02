@@ -14,6 +14,7 @@ This repository hosts a small CSV-in, HTML-out screening tool for rental listing
   - San Jose State University, One Washington Square, San Jose, CA 95192.
   - VillaSport San Jose, 1167 N Capitol Ave, San Jose, CA 95132.
   - Lam Research Fremont, 4650 Cushing Pkwy, Fremont, CA 94538.
+  - Northrop Grumman Sunnyvale, 401 E Hendy Ave, Sunnyvale, CA 94086.
 
 ## Hosted Report
 
@@ -41,6 +42,6 @@ python .\screen_zillow_rentals.py .\sample_listings.csv -o .\zillow_screening_re
 
 The first version avoids direct Zillow scraping. That keeps the workflow simpler and less brittle while still automating the actual screening and ranking. You can feed it listings from Zillow saved-search alerts, copied rows, or another compliant listing source.
 
-Latitude and longitude are optional, but including them improves the corridor score between Fremont and Sunnyvale. They also enable the SJSU, VillaSport, and Lam Research distance columns. The VillaSport commute column is a rough driving estimate, not live traffic.
+Latitude and longitude are optional, but including them improves the corridor score between Fremont and Sunnyvale. They also enable the SJSU, VillaSport, Lam Research, and Northrop destination columns. VillaSport commute and Northrop Drive are rough estimates, not live traffic.
 
 Click destination distances in the generated report to open Google Maps driving directions from the listing coordinates.
