@@ -35,10 +35,10 @@ The hosted page automatically loads and screens `listings.json` every time the b
 
 1. Create a RentCast API key from the RentCast API dashboard.
 2. In this GitHub repo, add a repository secret named `RENTCAST_API_KEY`.
-3. Run the `Update RentCast listings` GitHub Actions workflow manually, or wait for its daily scheduled run.
+3. Run the `Update RentCast listings` GitHub Actions workflow manually, or wait for its Monday/Wednesday/Friday scheduled run.
 4. Refresh the GitHub Pages report.
 
-The workflow runs `fetch_rentcast_listings.py`, calls RentCast's long-term rental listings endpoint, writes the filtered results to `listings.json`, and commits that file back to the repository.
+The workflow runs `fetch_rentcast_listings.py`, calls RentCast's long-term rental listings endpoint once per target city, writes the filtered results to `listings.json`, and commits that file back to the repository.
 
 ## Data Notes
 
