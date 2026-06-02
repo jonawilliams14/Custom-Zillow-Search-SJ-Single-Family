@@ -42,3 +42,5 @@ python .\screen_zillow_rentals.py .\sample_listings.csv -o .\zillow_screening_re
 The first version avoids direct Zillow scraping. That keeps the workflow simpler and less brittle while still automating the actual screening and ranking. You can feed it listings from Zillow saved-search alerts, copied rows, or another compliant listing source.
 
 Latitude and longitude are optional, but including them improves the corridor score between Fremont and Sunnyvale. They also enable the SJSU, VillaSport, and Lam Research distance columns. The VillaSport commute column is a rough driving estimate, not live traffic.
+
+Click destination distances in the generated report to open Google Maps driving directions from the listing coordinates.
