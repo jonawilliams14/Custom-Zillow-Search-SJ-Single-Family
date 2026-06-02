@@ -29,11 +29,11 @@ Open the GitHub Pages report here:
 
 https://jonawilliams14.github.io/Custom-Zillow-Search-SJ-Single-Family/
 
-The hosted page automatically loads `sample_listings.csv` every time the browser page refreshes. It uses a cache-busting request so the page should pull the latest committed CSV from the repo instead of relying on old browser data.
+The hosted page automatically loads and screens `sample_listings.csv` every time the browser page refreshes. There is no report-generation button to click.
 
-To update the report, edit `sample_listings.csv` with real Zillow listing rows, commit the CSV change, and refresh the GitHub Pages page. If `sample_listings.csv` only has the header row, the report will intentionally show no listings.
+To update the report, edit `sample_listings.csv` with real Zillow listing rows, commit the CSV change, and refresh the GitHub Pages page. The page uses a cache-busting request so it should pull the latest committed CSV from the repo instead of relying on old browser data.
 
-You can still paste temporary CSV data into the text box and press "Generate report" for a quick manual check. Refreshing the page will reload the committed `sample_listings.csv` from the repo.
+If `sample_listings.csv` only has the header row, the report will intentionally show no listings.
 
 The HTML report uses a stacked mobile layout in narrow browsers, so it is easier to scan in Mobile Chrome.
 
