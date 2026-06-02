@@ -25,9 +25,17 @@ Every report uses these defaults:
 
 ## Hosted Report
 
-Open `index.html` in the repository to view the current screening report. If GitHub Pages is enabled for this repository, `index.html` can be served as the project homepage.
+Open the GitHub Pages report here:
 
-The hosted page starts empty and does not include placeholder addresses. Paste real Zillow listing CSV data into the page to generate the report. The HTML report uses a stacked mobile layout in narrow browsers, so it is easier to scan in Mobile Chrome.
+https://jonawilliams14.github.io/Custom-Zillow-Search-SJ-Single-Family/
+
+The hosted page automatically loads `sample_listings.csv` every time the browser page refreshes. It uses a cache-busting request so the page should pull the latest committed CSV from the repo instead of relying on old browser data.
+
+To update the report, edit `sample_listings.csv` with real Zillow listing rows, commit the CSV change, and refresh the GitHub Pages page. If `sample_listings.csv` only has the header row, the report will intentionally show no listings.
+
+You can still paste temporary CSV data into the text box and press "Generate report" for a quick manual check. Refreshing the page will reload the committed `sample_listings.csv` from the repo.
+
+The HTML report uses a stacked mobile layout in narrow browsers, so it is easier to scan in Mobile Chrome.
 
 ## CSV Columns
 
