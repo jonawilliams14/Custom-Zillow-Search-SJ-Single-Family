@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Jon's Zillow Rental Screening Report</title>
+  <title>Jon's Rental Screening Report</title>
   <style>
     :root { color-scheme: light; font-family: Arial, Helvetica, sans-serif; background: #f5f7f8; color: #1f2933; }
     body { margin: 0; padding: 32px; }
@@ -45,22 +45,22 @@
 </head>
 <body>
   <main>
-    <h1>Jon's Zillow Rental Screening Report</h1>
-    <p class="summary">This report automatically loads and screens <code>sample_listings.csv</code> whenever the page refreshes.</p>
+    <h1>Jon's Rental Screening Report</h1>
+    <p class="summary">This report automatically loads and screens <code>listings.json</code>, generated from RentCast, whenever the page refreshes.</p>
     <section class="defaults">
-      <strong>Default hard filters:</strong> Zillow listing, San Jose/Fremont/Milpitas, $3,000-$5,000 rent, 1,200+ sqft, 3bd/2ba or 4bd+/2ba, single-family house or townhome. Parks and destination proximity are bonuses.
+      <strong>Default hard filters:</strong> San Jose/Fremont/Milpitas, $3,000-$5,000 rent, 1,200+ sqft, 3bd/2ba or 4bd+/2ba, single-family house or townhome. Parks and destination proximity are bonuses.
     </section>
-    <div id="status" class="status">Loading sample_listings.csv...</div>
-    <div id="empty" class="empty">No listings loaded yet. Add real rows to <code>sample_listings.csv</code>, then refresh this page.</div>
+    <div id="status" class="status">Loading listings.json...</div>
+    <div id="empty" class="empty">No generated listings yet. Add the <code>RENTCAST_API_KEY</code> repository secret, run the <code>Update RentCast listings</code> workflow, then refresh this page.</div>
     <table id="report" hidden>
-      <thead><tr><th>Rank</th><th>Photo</th><th>Verdict</th><th>Score</th><th>Rent</th><th>Beds/Baths</th><th>Sqft</th><th>Type</th><th>City</th><th>Address</th><th>Zillow</th><th>SJSU</th><th>VillaSport</th><th>Villa Commute</th><th>Lam Research</th><th>Northrop Drive</th><th>Notes</th></tr></thead>
+      <thead><tr><th>Rank</th><th>Photo</th><th>Verdict</th><th>Score</th><th>Rent</th><th>Beds/Baths</th><th>Sqft</th><th>Type</th><th>City</th><th>Address</th><th>Listing</th><th>SJSU</th><th>VillaSport</th><th>Villa Commute</th><th>Lam Research</th><th>Northrop Drive</th><th>Notes</th></tr></thead>
       <tbody id="report-body"></tbody>
     </table>
     <p class="summary">Distance values are straight-line estimates except Northrop Drive, which is a rough driving-distance estimate. VillaSport commute is a rough driving estimate, not live traffic.</p>
   </main>
   <script>
     const targetCities = new Set(['san jose', 'fremont', 'milpitas']);
-    const allowedTypes = new Set(['single family', 'single-family', 'sfh', 'house', 'townhome', 'townhouse']);
+    const allowedTypes = new Set(['single family', 'townhouse', 'townhome']);
     const corridorMidpoint = [(37.5485 + 37.3688) / 2, (-121.9886 + -122.0363) / 2];
     const destinations = {
       sjsu: ['San Jose State University', 'One Washington Square, San Jose, CA 95192', [37.3349064, -121.8845519]],
@@ -68,37 +68,12 @@
       lam: ['Lam Research Fremont', '4650 Cushing Pkwy, Fremont, CA 94538', [37.4886, -121.95694]],
       northrop: ['Northrop Grumman Sunnyvale', '401 E Hendy Ave, Sunnyvale, CA 94086', [37.377395, -122.0250165]]
     };
-    let csvText = '';
+    let reportData = { listings: [] };
     const status = document.getElementById('status');
-    const headers = ['address','city','url','image_url','rent','bedrooms','bathrooms','sqft','home_type','lat','lon','parks_nearby','notes'];
     const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+    const toNumber = value => Number(String(value || '').replace(/[$,]/g, '')) || 0;
     const isImageUrl = value => /^https?:\/\//i.test(String(value || ''));
     const imageCell = (url, address) => isImageUrl(url) ? `<img class="photo" src="${escapeHtml(url)}" alt="${escapeHtml(address)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'no-photo',textContent:'Photo unavailable'}))">` : '<span class="no-photo">No photo</span>';
-    const parseCsvLine = line => {
-      const values = [];
-      let current = '';
-      let quoted = false;
-      for (let i = 0; i < line.length; i++) {
-        const char = line[i];
-        if (char === '"' && line[i + 1] === '"') { current += '"'; i++; }
-        else if (char === '"') quoted = !quoted;
-        else if (char === ',' && !quoted) { values.push(current); current = ''; }
-        else current += char;
-      }
-      values.push(current);
-      return values.map(value => value.trim());
-    };
-    const parseCsv = text => {
-      const lines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
-      if (!lines.length) return [];
-      const first = parseCsvLine(lines[0]).map(value => value.toLowerCase());
-      const hasHeader = ['address','city','url','rent','bedrooms','bathrooms','sqft','home_type','lat','lon'].every(header => first.includes(header));
-      const activeHeaders = hasHeader ? first : headers;
-      return lines.slice(hasHeader ? 1 : 0).map(line => {
-        const values = parseCsvLine(line);
-        return Object.fromEntries(activeHeaders.map((header, index) => [header, values[index] || '']));
-      }).filter(row => row.address || row.url);
-    };
     const miles = (a, b) => {
       const r = 3958.8, toRad = d => d * Math.PI / 180;
       const dLat = toRad(b[0] - a[0]), dLon = toRad(b[1] - a[1]);
@@ -108,45 +83,46 @@
     };
     const mapsUrl = (origin, key) => `https://www.google.com/maps/dir/?api=1&origin=${origin[0].toFixed(6)},${origin[1].toFixed(6)}&destination=${encodeURIComponent(destinations[key][1])}&travelmode=driving`;
     const mapLink = (origin, key, text) => `<a class="maps-link" href="${mapsUrl(origin, key)}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+    const searchLink = row => `<a class="listing-link" href="https://www.google.com/search?q=${encodeURIComponent(`${row.address} rental listing`)}" target="_blank" rel="noopener noreferrer">Search listing</a>`;
     const commute = d => Math.round(((d * 1.3) / (d * 1.3 <= 8 ? 24 : d * 1.3 <= 18 ? 32 : 40)) * 60);
     const cells = values => values.map(([label, value]) => `<td data-label="${label}">${value}</td>`).join('');
-    const toNumber = value => Number(String(value || '').replace(/[$,]/g, '')) || 0;
-    const loadCsvFromRepo = async () => {
-      status.textContent = 'Loading sample_listings.csv...';
+    const loadListings = async () => {
+      status.textContent = 'Loading listings.json...';
       try {
-        const response = await fetch(`sample_listings.csv?ts=${Date.now()}`, { cache: 'no-store' });
+        const response = await fetch(`listings.json?ts=${Date.now()}`, { cache: 'no-store' });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        csvText = await response.text();
+        reportData = await response.json();
         render();
       } catch (error) {
-        csvText = '';
-        status.textContent = `Could not load sample_listings.csv: ${error.message}`;
+        reportData = { listings: [] };
+        status.textContent = `Could not load listings.json: ${error.message}`;
         render();
       }
     };
     const render = () => {
-      const parsed = parseCsv(csvText).map(row => ({
+      const parsed = (reportData.listings || []).map(row => ({
         address: row.address,
         city: row.city,
-        url: row.url,
-        imageUrl: row.image_url || row.image || row.photo_url || '',
+        imageUrl: row.image_url || row.imageUrl || '',
         rent: toNumber(row.rent),
         beds: toNumber(row.bedrooms),
         baths: toNumber(row.bathrooms),
         sqft: toNumber(row.sqft),
-        type: row.home_type,
+        type: row.home_type || row.propertyType,
         origin: [toNumber(row.lat), toNumber(row.lon)],
         parks: toNumber(row.parks_nearby),
-        notes: row.notes
+        listedDate: row.listedDate,
+        daysOnMarket: row.daysOnMarket,
+        source: row.source || reportData.source || 'RentCast'
       })).filter(row => row.origin[0] && row.origin[1]);
       document.getElementById('empty').hidden = parsed.length > 0;
       document.getElementById('report').hidden = parsed.length === 0;
-      status.textContent = parsed.length ? `${parsed.length} listing${parsed.length === 1 ? '' : 's'} loaded from sample_listings.csv.` : 'No valid listing rows found in sample_listings.csv. Add real rows with lat/lon values, then refresh this page.';
+      const generated = reportData.generatedAt ? ` Generated ${new Date(reportData.generatedAt).toLocaleString()}.` : '';
+      status.textContent = parsed.length ? `${parsed.length} listing${parsed.length === 1 ? '' : 's'} loaded from RentCast.${generated}` : 'No valid generated listings found. Add the RENTCAST_API_KEY secret, run the workflow, then refresh this page.';
       const rows = parsed.map(row => {
         const city = row.city.toLowerCase();
         const type = row.type.toLowerCase();
         const failures = [];
-        if (!/^https?:\/\/(www\.)?zillow\.com\//i.test(row.url)) failures.push('not a Zillow listing URL');
         if (!targetCities.has(city)) failures.push('outside San Jose/Fremont/Milpitas');
         if (row.rent < 3000 || row.rent > 5000) failures.push('rent outside $3,000-$5,000');
         if (row.sqft < 1200) failures.push('under 1,200 sqft');
@@ -169,6 +145,7 @@
         else if (row.parks === 1) { score += 4; reasons.push('nearby park'); }
         if (row.rent <= 4200) { score += 5; reasons.push('stronger rent value'); }
         if (row.sqft >= 1600) { score += 5; reasons.push('larger floor plan'); }
+        if (row.daysOnMarket) reasons.push(`${row.daysOnMarket} days on market`);
         return { ...row, score, verdict: failures.length ? 'Reject' : score >= 90 ? 'Top fit' : score >= 75 ? 'Worth touring' : 'Maybe', reasons, d };
       }).sort((a, b) => b.score - a.score);
       document.getElementById('report-body').innerHTML = rows.map((row, i) => `<tr>${cells([
@@ -182,7 +159,7 @@
         ['Type', escapeHtml(row.type)],
         ['City', escapeHtml(row.city)],
         ['Address', escapeHtml(row.address)],
-        ['Zillow', row.url ? `<a class="listing-link" href="${escapeHtml(row.url)}" target="_blank" rel="noopener noreferrer">Open Zillow</a>` : 'No link'],
+        ['Listing', searchLink(row)],
         ['SJSU', mapLink(row.origin, 'sjsu', `${row.d.sjsu.toFixed(1)} mi`)],
         ['VillaSport', mapLink(row.origin, 'villaSport', `${row.d.villaSport.toFixed(1)} mi`)],
         ['Villa Commute', `~${commute(row.d.villaSport)} min`],
@@ -191,7 +168,7 @@
         ['Notes', escapeHtml(row.reasons.join('; '))]
       ])}</tr>`).join('');
     };
-    loadCsvFromRepo();
+    loadListings();
   </script>
 </body>
 </html>
