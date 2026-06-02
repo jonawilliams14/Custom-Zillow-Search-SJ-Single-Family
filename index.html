@@ -18,7 +18,20 @@
     .top-fit { background: #d8f3dc; color: #1b5e20; }
     .reject { background: #ffd7d7; color: #8a1f1f; }
     .listing-link, .maps-link { color: #0b6b75; font-weight: 700; white-space: nowrap; }
-    @media (max-width: 900px) { body { padding: 16px; } table { display: block; overflow-x: auto; } th, td { min-width: 110px; } }
+    @media (max-width: 860px) {
+      body { padding: 14px; }
+      h1 { font-size: 24px; }
+      .summary { margin-bottom: 16px; font-size: 14px; }
+      table { display: block; border: 0; background: transparent; }
+      thead { display: none; }
+      tbody { display: grid; gap: 14px; }
+      tr { display: block; padding: 10px 12px; border: 1px solid #d9e2ec; border-radius: 8px; background: #ffffff; }
+      td { display: grid; grid-template-columns: minmax(104px, 36%) 1fr; gap: 12px; align-items: start; min-width: 0; padding: 9px 0; border-bottom: 1px solid #eef2f6; font-size: 14px; overflow-wrap: anywhere; }
+      td:last-child { border-bottom: 0; }
+      td::before { content: attr(data-label); color: #52606d; font-weight: 700; }
+      .verdict { min-width: 0; }
+      .listing-link, .maps-link { white-space: normal; }
+    }
   </style>
 </head>
 <body>
@@ -58,6 +71,7 @@
     const mapsUrl = (origin, key) => `https://www.google.com/maps/dir/?api=1&origin=${origin[0].toFixed(6)},${origin[1].toFixed(6)}&destination=${encodeURIComponent(destinations[key][1])}&travelmode=driving`;
     const mapLink = (origin, key, text) => `<a class="maps-link" href="${mapsUrl(origin, key)}" target="_blank" rel="noopener noreferrer">${text}</a>`;
     const commute = d => Math.round(((d * 1.3) / (d * 1.3 <= 8 ? 24 : d * 1.3 <= 18 ? 32 : 40)) * 60);
+    const cells = values => values.map(([label, value]) => `<td data-label="${label}">${value}</td>`).join('');
     const rows = listings.map(item => {
       const [address, city, url, rent, beds, baths, sqft, type, lat, lon, parks] = item;
       const origin = [lat, lon];
@@ -85,7 +99,24 @@
       if (sqft >= 1600) { score += 5; reasons.push('larger floor plan'); }
       return { address, city, url, rent, beds, baths, sqft, type, origin, score, verdict: failures.length ? 'Reject' : 'Top fit', reasons, d };
     }).sort((a, b) => b.score - a.score);
-    document.getElementById('report-body').innerHTML = rows.map((row, i) => `<tr><td>${i + 1}</td><td><span class="verdict ${row.verdict === 'Reject' ? 'reject' : 'top-fit'}">${row.verdict}</span></td><td>${row.score}</td><td>$${row.rent.toLocaleString()}</td><td>${row.beds}/${row.baths}</td><td>${row.sqft.toLocaleString()}</td><td>${row.type}</td><td>${row.city}</td><td>${row.address}</td><td><a class="listing-link" href="${row.url}" target="_blank" rel="noopener noreferrer">Open Zillow</a></td><td>${mapLink(row.origin, 'sjsu', `${row.d.sjsu.toFixed(1)} mi`)}</td><td>${mapLink(row.origin, 'villaSport', `${row.d.villaSport.toFixed(1)} mi`)}</td><td>~${commute(row.d.villaSport)} min</td><td>${mapLink(row.origin, 'lam', `${row.d.lam.toFixed(1)} mi`)}</td><td>${mapLink(row.origin, 'northrop', `~${(row.d.northrop * 1.3).toFixed(1)} mi drive`)}</td><td>${row.reasons.join('; ')}</td></tr>`).join('');
+    document.getElementById('report-body').innerHTML = rows.map((row, i) => `<tr>${cells([
+      ['Rank', i + 1],
+      ['Verdict', `<span class="verdict ${row.verdict === 'Reject' ? 'reject' : 'top-fit'}">${row.verdict}</span>`],
+      ['Score', row.score],
+      ['Rent', `$${row.rent.toLocaleString()}`],
+      ['Beds/Baths', `${row.beds}/${row.baths}`],
+      ['Sqft', row.sqft.toLocaleString()],
+      ['Type', row.type],
+      ['City', row.city],
+      ['Address', row.address],
+      ['Zillow', `<a class="listing-link" href="${row.url}" target="_blank" rel="noopener noreferrer">Open Zillow</a>`],
+      ['SJSU', mapLink(row.origin, 'sjsu', `${row.d.sjsu.toFixed(1)} mi`)],
+      ['VillaSport', mapLink(row.origin, 'villaSport', `${row.d.villaSport.toFixed(1)} mi`)],
+      ['Villa Commute', `~${commute(row.d.villaSport)} min`],
+      ['Lam Research', mapLink(row.origin, 'lam', `${row.d.lam.toFixed(1)} mi`)],
+      ['Northrop Drive', mapLink(row.origin, 'northrop', `~${(row.d.northrop * 1.3).toFixed(1)} mi drive`)],
+      ['Notes', row.reasons.join('; ')]
+    ])}</tr>`).join('');
   </script>
 </body>
 </html>
