@@ -1,0 +1,32 @@
+name: Update RentCast listings
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 13 * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  update-listings:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fetch RentCast listings
+        env:
+          RENTCAST_API_KEY: ${{ secrets.RENTCAST_API_KEY }}
+        run: python fetch_rentcast_listings.py
+
+      - name: Commit updated listings
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: Update RentCast listings
+          file_pattern: listings.json
