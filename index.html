@@ -3,14 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Zillow Rental Screening Report</title>
+  <title>Jon's Zillow Rental Screening Report</title>
   <style>
     :root { color-scheme: light; font-family: Arial, Helvetica, sans-serif; background: #f5f7f8; color: #1f2933; }
     body { margin: 0; padding: 32px; }
     main { max-width: 1280px; margin: 0 auto; }
     h1 { margin: 0 0 8px; font-size: 30px; letter-spacing: 0; }
-    .summary { margin: 0 0 20px; max-width: 940px; color: #52606d; line-height: 1.5; }
-    .controls { display: grid; gap: 12px; margin: 0 0 20px; max-width: 940px; }
+    .summary, .defaults { margin: 0 0 20px; max-width: 960px; color: #52606d; line-height: 1.5; }
+    .defaults { padding: 14px 16px; border: 1px solid #d9e2ec; border-radius: 8px; background: #ffffff; }
+    .defaults strong { color: #243b53; }
+    .controls { display: grid; gap: 12px; margin: 0 0 20px; max-width: 960px; }
     textarea { width: 100%; min-height: 132px; box-sizing: border-box; padding: 12px; border: 1px solid #bcccdc; border-radius: 8px; font: 13px/1.45 Consolas, monospace; resize: vertical; }
     .actions { display: flex; flex-wrap: wrap; gap: 10px; }
     button { border: 0; border-radius: 6px; padding: 10px 14px; background: #0b6b75; color: white; font-weight: 700; cursor: pointer; }
@@ -32,7 +34,7 @@
     @media (max-width: 860px) {
       body { padding: 14px; }
       h1 { font-size: 24px; }
-      .summary { margin-bottom: 16px; font-size: 14px; }
+      .summary, .defaults { margin-bottom: 16px; font-size: 14px; }
       textarea { min-height: 116px; }
       table { display: block; border: 0; background: transparent; }
       thead { display: none; }
@@ -49,8 +51,11 @@
 </head>
 <body>
   <main>
-    <h1>Zillow Rental Screening Report</h1>
-    <p class="summary">Paste real listing CSV rows below. Add the first Zillow photo URL in <code>image_url</code> to show a listing photo.</p>
+    <h1>Jon's Zillow Rental Screening Report</h1>
+    <p class="summary">This report is preconfigured for my personal move search: San Jose, Fremont, or Milpitas Zillow rentals only.</p>
+    <section class="defaults">
+      <strong>Default hard filters:</strong> Zillow listing, San Jose/Fremont/Milpitas, $3,000-$5,000 rent, 1,200+ sqft, 3bd/2ba or 4bd+/2ba, single-family house or townhome. Parks and destination proximity are bonuses.
+    </section>
     <section class="controls">
       <textarea id="csv-input" spellcheck="false" placeholder="address,city,url,image_url,rent,bedrooms,bathrooms,sqft,home_type,lat,lon,parks_nearby,notes"></textarea>
       <div class="actions">
@@ -59,7 +64,7 @@
       </div>
       <div id="status" class="status"></div>
     </section>
-    <div id="empty" class="empty">No listings loaded yet. Paste CSV data with real Zillow listing links, photo URLs, and coordinates, then generate the report.</div>
+    <div id="empty" class="empty">No listings loaded yet. Paste real Zillow listing CSV data with photo URLs and coordinates, then generate the report.</div>
     <table id="report" hidden>
       <thead><tr><th>Rank</th><th>Photo</th><th>Verdict</th><th>Score</th><th>Rent</th><th>Beds/Baths</th><th>Sqft</th><th>Type</th><th>City</th><th>Address</th><th>Zillow</th><th>SJSU</th><th>VillaSport</th><th>Villa Commute</th><th>Lam Research</th><th>Northrop Drive</th><th>Notes</th></tr></thead>
       <tbody id="report-body"></tbody>
@@ -67,8 +72,7 @@
     <p class="summary">Distance values are straight-line estimates except Northrop Drive, which is a rough driving-distance estimate. VillaSport commute is a rough driving estimate, not live traffic.</p>
   </main>
   <script>
-    const preferredCities = new Set(['san jose', 'milpitas']);
-    const acceptableCities = new Set(['fremont', 'sunnyvale', 'santa clara', 'newark', 'cupertino']);
+    const targetCities = new Set(['san jose', 'fremont', 'milpitas']);
     const allowedTypes = new Set(['single family', 'single-family', 'sfh', 'house', 'townhome', 'townhouse']);
     const corridorMidpoint = [(37.5485 + 37.3688) / 2, (-121.9886 + -122.0363) / 2];
     const destinations = {
@@ -142,16 +146,20 @@
       document.getElementById('report').hidden = parsed.length === 0;
       status.textContent = parsed.length ? `${parsed.length} listing${parsed.length === 1 ? '' : 's'} loaded.` : 'No valid listing rows found. Include real lat/lon values.';
       const rows = parsed.map(row => {
+        const city = row.city.toLowerCase();
+        const type = row.type.toLowerCase();
         const failures = [];
+        if (!/^https?:\/\/(www\.)?zillow\.com\//i.test(row.url)) failures.push('not a Zillow listing URL');
+        if (!targetCities.has(city)) failures.push('outside San Jose/Fremont/Milpitas');
         if (row.rent < 3000 || row.rent > 5000) failures.push('rent outside $3,000-$5,000');
         if (row.sqft < 1200) failures.push('under 1,200 sqft');
         if (!((row.beds === 3 && row.baths >= 2) || (row.beds >= 4 && row.baths >= 2))) failures.push('does not meet 3bd/2ba or 4bd+/2ba');
-        if (!allowedTypes.has(row.type.toLowerCase())) failures.push('not single-family house or townhome');
-        if (!preferredCities.has(row.city.toLowerCase()) && !acceptableCities.has(row.city.toLowerCase())) failures.push('outside target corridor');
+        if (!allowedTypes.has(type)) failures.push('not single-family house or townhome');
         let score = failures.length ? failures.length * -20 : 60;
         const reasons = failures.length ? [...failures] : ['meets all hard filters'];
-        if (preferredCities.has(row.city.toLowerCase())) { score += 20; reasons.push('preferred city'); }
-        else if (acceptableCities.has(row.city.toLowerCase())) { score += 8; reasons.push('acceptable corridor city'); }
+        if (city === 'san jose') { score += 16; reasons.push('target city: San Jose'); }
+        else if (city === 'milpitas') { score += 14; reasons.push('target city: Milpitas'); }
+        else if (city === 'fremont') { score += 12; reasons.push('target city: Fremont'); }
         const corridor = miles(row.origin, corridorMidpoint);
         if (corridor <= 8) { score += 12; reasons.push(`near Fremont/Sunnyvale midpoint (${corridor.toFixed(1)} mi)`); }
         else if (corridor <= 15) { score += 6; reasons.push(`reasonable corridor distance (${corridor.toFixed(1)} mi)`); }
