@@ -21,6 +21,8 @@
     th { background: #e6f0f2; color: #243b53; font-weight: 700; }
     tr:last-child td { border-bottom: 0; }
     .empty { padding: 18px; border: 1px dashed #9fb3c8; border-radius: 8px; background: #ffffff; color: #52606d; }
+    .photo { display: block; width: 132px; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; border: 1px solid #d9e2ec; background: #eef2f6; }
+    .no-photo { color: #829ab1; white-space: nowrap; }
     .verdict { display: inline-block; min-width: 86px; padding: 4px 8px; border-radius: 6px; text-align: center; font-weight: 700; white-space: nowrap; }
     .top-fit { background: #d8f3dc; color: #1b5e20; }
     .worth-touring { background: #fff3bf; color: #6c4f00; }
@@ -39,6 +41,7 @@
       td { display: grid; grid-template-columns: minmax(104px, 36%) 1fr; gap: 12px; align-items: start; min-width: 0; padding: 9px 0; border-bottom: 1px solid #eef2f6; font-size: 14px; overflow-wrap: anywhere; }
       td:last-child { border-bottom: 0; }
       td::before { content: attr(data-label); color: #52606d; font-weight: 700; }
+      .photo { width: min(100%, 220px); }
       .verdict { min-width: 0; }
       .listing-link, .maps-link { white-space: normal; }
     }
@@ -47,18 +50,18 @@
 <body>
   <main>
     <h1>Zillow Rental Screening Report</h1>
-    <p class="summary">Paste real listing CSV rows below. The page starts empty so no placeholder addresses appear in the report.</p>
+    <p class="summary">Paste real listing CSV rows below. Add the first Zillow photo URL in <code>image_url</code> to show a listing photo.</p>
     <section class="controls">
-      <textarea id="csv-input" spellcheck="false" placeholder="address,city,url,rent,bedrooms,bathrooms,sqft,home_type,lat,lon,parks_nearby,notes"></textarea>
+      <textarea id="csv-input" spellcheck="false" placeholder="address,city,url,image_url,rent,bedrooms,bathrooms,sqft,home_type,lat,lon,parks_nearby,notes"></textarea>
       <div class="actions">
         <button id="generate">Generate report</button>
         <button id="clear" class="secondary">Clear saved data</button>
       </div>
       <div id="status" class="status"></div>
     </section>
-    <div id="empty" class="empty">No listings loaded yet. Paste CSV data with real Zillow listing links and coordinates, then generate the report.</div>
+    <div id="empty" class="empty">No listings loaded yet. Paste CSV data with real Zillow listing links, photo URLs, and coordinates, then generate the report.</div>
     <table id="report" hidden>
-      <thead><tr><th>Rank</th><th>Verdict</th><th>Score</th><th>Rent</th><th>Beds/Baths</th><th>Sqft</th><th>Type</th><th>City</th><th>Address</th><th>Zillow</th><th>SJSU</th><th>VillaSport</th><th>Villa Commute</th><th>Lam Research</th><th>Northrop Drive</th><th>Notes</th></tr></thead>
+      <thead><tr><th>Rank</th><th>Photo</th><th>Verdict</th><th>Score</th><th>Rent</th><th>Beds/Baths</th><th>Sqft</th><th>Type</th><th>City</th><th>Address</th><th>Zillow</th><th>SJSU</th><th>VillaSport</th><th>Villa Commute</th><th>Lam Research</th><th>Northrop Drive</th><th>Notes</th></tr></thead>
       <tbody id="report-body"></tbody>
     </table>
     <p class="summary">Distance values are straight-line estimates except Northrop Drive, which is a rough driving-distance estimate. VillaSport commute is a rough driving estimate, not live traffic.</p>
@@ -74,12 +77,14 @@
       lam: ['Lam Research Fremont', '4650 Cushing Pkwy, Fremont, CA 94538', [37.4886, -121.95694]],
       northrop: ['Northrop Grumman Sunnyvale', '401 E Hendy Ave, Sunnyvale, CA 94086', [37.377395, -122.0250165]]
     };
-    const headers = ['address','city','url','rent','bedrooms','bathrooms','sqft','home_type','lat','lon','parks_nearby','notes'];
+    const headers = ['address','city','url','image_url','rent','bedrooms','bathrooms','sqft','home_type','lat','lon','parks_nearby','notes'];
     const input = document.getElementById('csv-input');
     const status = document.getElementById('status');
     const savedCsv = localStorage.getItem('zillow-screening-csv') || '';
     input.value = savedCsv;
     const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+    const isImageUrl = value => /^https?:\/\//i.test(String(value || ''));
+    const imageCell = (url, address) => isImageUrl(url) ? `<img class="photo" src="${escapeHtml(url)}" alt="${escapeHtml(address)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'no-photo',textContent:'Photo unavailable'}))">` : '<span class="no-photo">No photo</span>';
     const parseCsvLine = line => {
       const values = [];
       let current = '';
@@ -98,7 +103,7 @@
       const lines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
       if (!lines.length) return [];
       const first = parseCsvLine(lines[0]).map(value => value.toLowerCase());
-      const hasHeader = headers.every(header => first.includes(header));
+      const hasHeader = ['address','city','url','rent','bedrooms','bathrooms','sqft','home_type','lat','lon'].every(header => first.includes(header));
       const activeHeaders = hasHeader ? first : headers;
       return lines.slice(hasHeader ? 1 : 0).map(line => {
         const values = parseCsvLine(line);
@@ -122,6 +127,7 @@
         address: row.address,
         city: row.city,
         url: row.url,
+        imageUrl: row.image_url || row.image || row.photo_url || '',
         rent: toNumber(row.rent),
         beds: toNumber(row.bedrooms),
         baths: toNumber(row.bathrooms),
@@ -162,6 +168,7 @@
       }).sort((a, b) => b.score - a.score);
       document.getElementById('report-body').innerHTML = rows.map((row, i) => `<tr>${cells([
         ['Rank', i + 1],
+        ['Photo', imageCell(row.imageUrl, row.address)],
         ['Verdict', `<span class="verdict ${row.verdict.toLowerCase().replaceAll(' ', '-')}">${row.verdict}</span>`],
         ['Score', row.score],
         ['Rent', `$${row.rent.toLocaleString()}`],
