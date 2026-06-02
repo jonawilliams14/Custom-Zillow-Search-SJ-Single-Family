@@ -5,142 +5,42 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Zillow Rental Screening Report</title>
   <style>
-    :root {
-      color-scheme: light;
-      font-family: Arial, Helvetica, sans-serif;
-      background: #f5f7f8;
-      color: #1f2933;
-    }
-    body {
-      margin: 0;
-      padding: 32px;
-    }
-    main {
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-    h1 {
-      margin: 0 0 8px;
-      font-size: 30px;
-      letter-spacing: 0;
-    }
-    .summary {
-      margin: 0 0 24px;
-      max-width: 880px;
-      color: #52606d;
-      line-height: 1.5;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: #ffffff;
-      border: 1px solid #d9e2ec;
-    }
-    th, td {
-      padding: 12px;
-      border-bottom: 1px solid #d9e2ec;
-      text-align: left;
-      vertical-align: top;
-      font-size: 14px;
-    }
-    th {
-      background: #e6f0f2;
-      color: #243b53;
-      font-weight: 700;
-    }
-    tr:last-child td {
-      border-bottom: 0;
-    }
-    .verdict {
-      display: inline-block;
-      min-width: 86px;
-      padding: 4px 8px;
-      border-radius: 6px;
-      text-align: center;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-    .top-fit {
-      background: #d8f3dc;
-      color: #1b5e20;
-    }
-    .worth-touring {
-      background: #fff3bf;
-      color: #6c4f00;
-    }
-    .maybe {
-      background: #dbeafe;
-      color: #1e3a8a;
-    }
-    .reject {
-      background: #ffd7d7;
-      color: #8a1f1f;
-    }
-    .listing-link {
-      color: #0b6b75;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-    .missing-link {
-      color: #829ab1;
-      white-space: nowrap;
-    }
-    .checklist {
-      margin-top: 24px;
-      line-height: 1.6;
-    }
-    @media (max-width: 860px) {
-      body {
-        padding: 16px;
-      }
-      table {
-        display: block;
-        overflow-x: auto;
-      }
-      th, td {
-        min-width: 110px;
-      }
-    }
+    :root { color-scheme: light; font-family: Arial, Helvetica, sans-serif; background: #f5f7f8; color: #1f2933; }
+    body { margin: 0; padding: 32px; }
+    main { max-width: 1200px; margin: 0 auto; }
+    h1 { margin: 0 0 8px; font-size: 30px; letter-spacing: 0; }
+    .summary { margin: 0 0 24px; max-width: 880px; color: #52606d; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; background: #ffffff; border: 1px solid #d9e2ec; }
+    th, td { padding: 12px; border-bottom: 1px solid #d9e2ec; text-align: left; vertical-align: top; font-size: 14px; }
+    th { background: #e6f0f2; color: #243b53; font-weight: 700; }
+    tr:last-child td { border-bottom: 0; }
+    .verdict { display: inline-block; min-width: 86px; padding: 4px 8px; border-radius: 6px; text-align: center; font-weight: 700; white-space: nowrap; }
+    .top-fit { background: #d8f3dc; color: #1b5e20; }
+    .worth-touring { background: #fff3bf; color: #6c4f00; }
+    .maybe { background: #dbeafe; color: #1e3a8a; }
+    .reject { background: #ffd7d7; color: #8a1f1f; }
+    .listing-link, .maps-link { color: #0b6b75; font-weight: 700; white-space: nowrap; }
+    .missing-link { color: #829ab1; white-space: nowrap; }
+    .checklist { margin-top: 24px; line-height: 1.6; }
+    @media (max-width: 860px) { body { padding: 16px; } table { display: block; overflow-x: auto; } th, td { min-width: 110px; } }
   </style>
 </head>
 <body>
   <main>
     <h1>Zillow Rental Screening Report</h1>
-    <p class="summary">
-      Criteria: $3,000-$5,000 rent, at least 1,200 sqft, 3bd/2ba or 4bd+/2ba,
-      single-family house or townhome, optimized between Fremont and Sunnyvale
-      with San Jose or Milpitas preferred. Nearby parks add bonus points. Distances
-      to SJSU, VillaSport San Jose, and Lam Research Fremont are included when
-      lat/lon are provided.
-    </p>
+    <p class="summary">Criteria: $3,000-$5,000 rent, at least 1,200 sqft, 3bd/2ba or 4bd+/2ba, single-family house or townhome, optimized between Fremont and Sunnyvale with San Jose or Milpitas preferred. Nearby parks add bonus points. Distances to SJSU, VillaSport San Jose, and Lam Research Fremont are included when lat/lon are provided.</p>
     <table>
       <thead>
-        <tr>
-          <th>Rank</th>
-          <th>Verdict</th>
-          <th>Score</th>
-          <th>Rent</th>
-          <th>Beds/Baths</th>
-          <th>Sqft</th>
-          <th>Type</th>
-          <th>City</th>
-          <th>Address</th>
-          <th>Zillow</th>
-          <th>SJSU</th>
-          <th>VillaSport</th>
-          <th>Villa Commute</th>
-          <th>Lam Research</th>
-          <th>Notes</th>
-        </tr>
+        <tr><th>Rank</th><th>Verdict</th><th>Score</th><th>Rent</th><th>Beds/Baths</th><th>Sqft</th><th>Type</th><th>City</th><th>Address</th><th>Zillow</th><th>SJSU</th><th>VillaSport</th><th>Villa Commute</th><th>Lam Research</th><th>Notes</th></tr>
       </thead>
       <tbody>
-        <tr><td>1</td><td><span class="verdict top-fit">Top fit</span></td><td>116</td><td>$4,100</td><td>3/2</td><td>1,450</td><td>townhome</td><td>Milpitas</td><td>123 Example Ct</td><td><a class="listing-link" href="https://www.zillow.com/" target="_blank" rel="noopener noreferrer">Open Zillow</a></td><td>6.8 mi</td><td>3.4 mi</td><td>~11 min</td><td>5.0 mi</td><td>meets all hard filters; preferred city; near Fremont/Sunnyvale midpoint (6.5 mi); close to SJSU (6.8 mi); close to VillaSport (3.4 mi); close to Lam Research (5.0 mi); multiple nearby parks; stronger rent value</td></tr><tr><td>2</td><td><span class="verdict top-fit">Top fit</span></td><td>106</td><td>$4,950</td><td>4/2.5</td><td>1,800</td><td>single family</td><td>San Jose</td><td>456 Sample Ave</td><td><a class="listing-link" href="https://www.zillow.com/" target="_blank" rel="noopener noreferrer">Open Zillow</a></td><td>0.3 mi</td><td>5.1 mi</td><td>~17 min</td><td>11.1 mi</td><td>meets all hard filters; preferred city; reasonable corridor distance (10.8 mi); close to SJSU (0.3 mi); close to VillaSport (5.1 mi); close to Lam Research (11.1 mi); nearby park; larger floor plan</td></tr><tr><td>3</td><td><span class="verdict reject">Reject</span></td><td>20</td><td>$5,600</td><td>4/3</td><td>1,900</td><td>single family</td><td>Sunnyvale</td><td>321 Luxury Rd</td><td><a class="listing-link" href="https://www.zillow.com/" target="_blank" rel="noopener noreferrer">Open Zillow</a></td><td>8.7 mi</td><td>10.7 mi</td><td>~26 min</td><td>9.4 mi</td><td>rent outside $3,000-$5,000; acceptable corridor city; near Fremont/Sunnyvale midpoint (6.3 mi); close to SJSU (8.7 mi); close to Lam Research (9.4 mi); multiple nearby parks; larger floor plan</td></tr><tr><td>4</td><td><span class="verdict reject">Reject</span></td><td>-7</td><td>$3,500</td><td>3/1.5</td><td>1,100</td><td>townhome</td><td>Fremont</td><td>789 Small Pl</td><td><a class="listing-link" href="https://www.zillow.com/" target="_blank" rel="noopener noreferrer">Open Zillow</a></td><td>15.8 mi</td><td>12.5 mi</td><td>~31 min</td><td>4.5 mi</td><td>under 1,200 sqft; does not meet 3bd/2ba or 4bd+/2ba; acceptable corridor city; near Fremont/Sunnyvale midpoint (6.3 mi); close to Lam Research (4.5 mi); nearby park; stronger rent value</td></tr>
+        <tr><td>1</td><td><span class="verdict top-fit">Top fit</span></td><td>116</td><td>$4,100</td><td>3/2</td><td>1,450</td><td>townhome</td><td>Milpitas</td><td>123 Example Ct</td><td><a class="listing-link" href="https://www.zillow.com/" target="_blank" rel="noopener noreferrer">Open Zillow</a></td><td><a class="maps-link" href="https://www.google.com/maps/dir/?api=1&amp;origin=37.432300,-121.899600&amp;destination=One+Washington+Square%2C+San+Jose%2C+CA+95192&amp;travelmode=driving" target="_blank" rel="noopener noreferrer" title="Open Google Maps directions to San Jose State University">6.8 mi</a></td><td><a class="maps-link" href="https://www.google.com/maps/dir/?api=1&amp;origin=37.432300,-121.899600&amp;destination=1167+N+Capitol+Ave%2C+San+Jose%2C+CA+95132&amp;travelmode=driving" target="_blank" rel="noopener noreferrer" title="Open Google Maps directions to VillaSport San Jose">3.4 mi</a></td><td>~11 min</td><td><a class="maps-link" href="https://www.google.com/maps/dir/?api=1&amp;origin=37.432300,-121.899600&amp;destination=4650+Cushing+Pkwy%2C+Fremont%2C+CA+94538&amp;travelmode=driving" target="_blank" rel="noopener noreferrer" title="Open Google Maps directions to Lam Research Fremont">5.0 mi</a></td><td>meets all hard filters; preferred city; near Fremont/Sunnyvale midpoint (6.5 mi); close to SJSU (6.8 mi); close to VillaSport (3.4 mi); close to Lam Research (5.0 mi); multiple nearby parks; stronger rent value</td></tr>
+        <tr><td>2</td><td><span class="verdict top-fit">Top fit</span></td><td>106</td><td>$4,950</td><td>4/2.5</td><td>1,800</td><td>single family</td><td>San Jose</td><td>456 Sample Ave</td><td><a class="listing-link" href="https://www.zillow.com/" target="_blank" rel="noopener noreferrer">Open Zillow</a></td><td><a class="maps-link" href="https://www.google.com/maps/dir/?api=1&amp;origin=37.338700,-121.885300&amp;destination=One+Washington+Square%2C+San+Jose%2C+CA+95192&amp;travelmode=driving" target="_blank" rel="noopener noreferrer" title="Open Google Maps directions to San Jose State University">0.3 mi</a></td><td><a class="maps-link" href="https://www.google.com/maps/dir/?api=1&amp;origin=37.338700,-121.885300&amp;destination=1167+N+Capitol+Ave%2C+San+Jose%2C+CA+95132&amp;travelmode=driving" target="_blank" rel="noopener noreferrer" title="Open Google Maps directions to VillaSport San Jose">5.1 mi</a></td><td>~17 min</td><td><a class="maps-link" href="https://www.google.com/maps/dir/?api=1&amp;origin=37.338700,-121.885300&amp;destination=4650+Cushing+Pkwy%2C+Fremont%2C+CA+94538&amp;travelmode=driving" target="_blank" rel="noopener noreferrer" title="Open Google Maps directions to Lam Research Fremont">11.1 mi</a></td><td>meets all hard filters; preferred city; reasonable corridor distance (10.8 mi); close to SJSU (0.3 mi); close to VillaSport (5.1 mi); close to Lam Research (11.1 mi); nearby park; larger floor plan</td></tr>
+        <tr><td>3</td><td><span class="verdict reject">Reject</span></td><td>20</td><td>$5,600</td><td>4/3</td><td>1,900</td><td>single family</td><td>Sunnyvale</td><td>321 Luxury Rd</td><td><a class="listing-link" href="https://www.zillow.com/" target="_blank" rel="noopener noreferrer">Open Zillow</a></td><td><a class="maps-link" href="https://www.google.com/maps/dir/?api=1&amp;origin=37.368800,-122.036300&amp;destination=One+Washington+Square%2C+San+Jose%2C+CA+95192&amp;travelmode=driving" target="_blank" rel="noopener noreferrer" title="Open Google Maps directions to San Jose State University">8.7 mi</a></td><td><a class="maps-link" href="https://www.google.com/maps/dir/?api=1&amp;origin=37.368800,-122.036300&amp;destination=1167+N+Capitol+Ave%2C+San+Jose%2C+CA+95132&amp;travelmode=driving" target="_blank" rel="noopener noreferrer" title="Open Google Maps directions to VillaSport San Jose">10.7 mi</a></td><td>~26 min</td><td><a class="maps-link" href="https://www.google.com/maps/dir/?api=1&amp;origin=37.368800,-122.036300&amp;destination=4650+Cushing+Pkwy%2C+Fremont%2C+CA+94538&amp;travelmode=driving" target="_blank" rel="noopener noreferrer" title="Open Google Maps directions to Lam Research Fremont">9.4 mi</a></td><td>rent outside $3,000-$5,000; acceptable corridor city; near Fremont/Sunnyvale midpoint (6.3 mi); close to SJSU (8.7 mi); close to Lam Research (9.4 mi); multiple nearby parks; larger floor plan</td></tr>
+        <tr><td>4</td><td><span class="verdict reject">Reject</span></td><td>-7</td><td>$3,500</td><td>3/1.5</td><td>1,100</td><td>townhome</td><td>Fremont</td><td>789 Small Pl</td><td><a class="listing-link" href="https://www.zillow.com/" target="_blank" rel="noopener noreferrer">Open Zillow</a></td><td><a class="maps-link" href="https://www.google.com/maps/dir/?api=1&amp;origin=37.548500,-121.988600&amp;destination=One+Washington+Square%2C+San+Jose%2C+CA+95192&amp;travelmode=driving" target="_blank" rel="noopener noreferrer" title="Open Google Maps directions to San Jose State University">15.8 mi</a></td><td><a class="maps-link" href="https://www.google.com/maps/dir/?api=1&amp;origin=37.548500,-121.988600&amp;destination=1167+N+Capitol+Ave%2C+San+Jose%2C+CA+95132&amp;travelmode=driving" target="_blank" rel="noopener noreferrer" title="Open Google Maps directions to VillaSport San Jose">12.5 mi</a></td><td>~31 min</td><td><a class="maps-link" href="https://www.google.com/maps/dir/?api=1&amp;origin=37.548500,-121.988600&amp;destination=4650+Cushing+Pkwy%2C+Fremont%2C+CA+94538&amp;travelmode=driving" target="_blank" rel="noopener noreferrer" title="Open Google Maps directions to Lam Research Fremont">4.5 mi</a></td><td>under 1,200 sqft; does not meet 3bd/2ba or 4bd+/2ba; acceptable corridor city; near Fremont/Sunnyvale midpoint (6.3 mi); close to Lam Research (4.5 mi); nearby park; stronger rent value</td></tr>
       </tbody>
     </table>
-    <p class="summary">
-      Distance values are straight-line estimates. VillaSport commute is a rough
-      driving estimate, not live traffic.
-    </p>
+    <p class="summary">Distance values are straight-line estimates. VillaSport commute is a rough driving estimate, not live traffic. Click destination distances to open Google Maps driving directions.</p>
     <section class="checklist">
       <h2>Follow-up Checklist</h2>
       <ul>
