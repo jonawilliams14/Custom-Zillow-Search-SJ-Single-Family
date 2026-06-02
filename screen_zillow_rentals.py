@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate an HTML or Markdown rental screening report from listing CSV rows."""
+"""Generate a personal Zillow rental screening report from listing CSV rows."""
 
 from __future__ import annotations
 
@@ -11,8 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import quote_plus
 
-PREFERRED_CITIES = {"san jose", "milpitas"}
-ACCEPTABLE_CITIES = {"fremont", "sunnyvale", "santa clara", "newark", "cupertino"}
+TARGET_CITIES = {"san jose", "fremont", "milpitas"}
 ALLOWED_HOME_TYPES = {"single family", "single-family", "sfh", "house", "townhome", "townhouse"}
 FREMONT = (37.5485, -121.9886)
 SUNNYVALE = (37.3688, -122.0363)
@@ -23,6 +22,7 @@ DESTINATIONS = {
     "lam_research": ("Lam Research Fremont", "4650 Cushing Pkwy, Fremont, CA 94538", (37.4886, -121.95694)),
     "northrop_grumman": ("Northrop Grumman Sunnyvale", "401 E Hendy Ave, Sunnyvale, CA 94086", (37.377395, -122.0250165)),
 }
+CRITERIA = "$3,000-$5,000 rent, 1,200+ sqft, 3bd/2ba or 4bd+/2ba, San Jose/Fremont/Milpitas, Zillow listing, single-family house or townhome."
 
 
 @dataclass(frozen=True)
@@ -144,8 +144,16 @@ def bedroom_bath_fit(listing: Listing) -> bool:
     return (listing.bedrooms == 3 and listing.bathrooms >= 2) or (listing.bedrooms >= 4 and listing.bathrooms >= 2)
 
 
+def is_zillow_url(url: str) -> bool:
+    return url.startswith("https://www.zillow.com/") or url.startswith("http://www.zillow.com/") or url.startswith("https://zillow.com/") or url.startswith("http://zillow.com/")
+
+
 def required_failures(listing: Listing) -> list[str]:
     failures = []
+    if not is_zillow_url(listing.url):
+        failures.append("not a Zillow listing URL")
+    if listing.city.lower() not in TARGET_CITIES:
+        failures.append("outside San Jose/Fremont/Milpitas")
     if not 3000 <= listing.rent <= 5000:
         failures.append("rent outside $3,000-$5,000")
     if listing.sqft < 1200:
@@ -154,58 +162,39 @@ def required_failures(listing: Listing) -> list[str]:
         failures.append("does not meet 3bd/2ba or 4bd+/2ba")
     if listing.home_type.lower() not in ALLOWED_HOME_TYPES:
         failures.append("not single-family house or townhome")
-    if listing.city.lower() not in PREFERRED_CITIES | ACCEPTABLE_CITIES:
-        failures.append("outside target corridor")
     return failures
 
 
 def score_listing(listing: Listing) -> tuple[int, list[str]]:
-    score = 0
     failures = required_failures(listing)
-    reasons = list(failures)
-    if failures:
-        score -= len(failures) * 20
-    else:
-        score += 60
-        reasons.append("meets all hard filters")
+    score = len(failures) * -20 if failures else 60
+    reasons = list(failures) if failures else ["meets all hard filters"]
     city = listing.city.lower()
-    if city in PREFERRED_CITIES:
-        score += 20
-        reasons.append("preferred city")
-    elif city in ACCEPTABLE_CITIES:
-        score += 8
-        reasons.append("acceptable corridor city")
+    if city == "san jose":
+        score += 16; reasons.append("target city: San Jose")
+    elif city == "milpitas":
+        score += 14; reasons.append("target city: Milpitas")
+    elif city == "fremont":
+        score += 12; reasons.append("target city: Fremont")
     listing_coords = coords(listing)
     if listing_coords is not None:
         corridor_distance = haversine_miles(listing_coords, CORRIDOR_MIDPOINT)
         if corridor_distance <= 8:
-            score += 12
-            reasons.append(f"near Fremont/Sunnyvale midpoint ({corridor_distance:.1f} mi)")
+            score += 12; reasons.append(f"near Fremont/Sunnyvale midpoint ({corridor_distance:.1f} mi)")
         elif corridor_distance <= 15:
-            score += 6
-            reasons.append(f"reasonable corridor distance ({corridor_distance:.1f} mi)")
-        for key, label, max_miles, bonus in [
-            ("sjsu", "SJSU", 12, 3),
-            ("villa_sport", "VillaSport", 8, 4),
-            ("lam_research", "Lam Research", 15, 4),
-            ("northrop_grumman", "Northrop Grumman", 15, 4),
-        ]:
+            score += 6; reasons.append(f"reasonable corridor distance ({corridor_distance:.1f} mi)")
+        for key, label, max_miles, bonus in [("sjsu", "SJSU", 12, 3), ("villa_sport", "VillaSport", 8, 4), ("lam_research", "Lam Research", 15, 4), ("northrop_grumman", "Northrop Grumman", 15, 4)]:
             distance = destination_distance(listing, key)
             if distance is not None and distance <= max_miles:
-                score += bonus
-                reasons.append(f"close to {label} ({distance:.1f} mi)")
+                score += bonus; reasons.append(f"close to {label} ({distance:.1f} mi)")
     if listing.parks_nearby >= 2:
-        score += 8
-        reasons.append("multiple nearby parks")
+        score += 8; reasons.append("multiple nearby parks")
     elif listing.parks_nearby == 1:
-        score += 4
-        reasons.append("nearby park")
+        score += 4; reasons.append("nearby park")
     if listing.rent <= 4200:
-        score += 5
-        reasons.append("stronger rent value")
+        score += 5; reasons.append("stronger rent value")
     if listing.sqft >= 1600:
-        score += 5
-        reasons.append("larger floor plan")
+        score += 5; reasons.append("larger floor plan")
     return score, reasons
 
 
@@ -228,42 +217,22 @@ def ranked_listings(listings: list[Listing]) -> list[tuple[int, str, Listing, li
 
 
 def markdown_report(listings: list[Listing]) -> str:
-    lines = [
-        "# Zillow Rental Screening Report",
-        "",
-        "| Rank | Photo | Verdict | Score | Rent | Beds/Baths | Sqft | Type | City | Address | SJSU | VillaSport | Villa Commute | Lam Research | Northrop Drive | Notes |",
-        "|---:|---|---|---:|---:|---|---:|---|---|---|---:|---:|---:|---:|---:|---|",
-    ]
+    lines = ["# Jon's Zillow Rental Screening Report", "", f"Default criteria: {CRITERIA}", "", "| Rank | Photo | Verdict | Score | Rent | Beds/Baths | Sqft | Type | City | Address | SJSU | VillaSport | Villa Commute | Lam Research | Northrop Drive | Notes |", "|---:|---|---|---:|---:|---|---:|---|---|---|---:|---:|---:|---:|---:|---|"]
     for rank, (score, item_verdict, listing, reasons) in enumerate(ranked_listings(listings), start=1):
         address = f"[{listing.address}]({listing.url})" if listing.url else listing.address
         photo = f"![{listing.address}]({listing.image_url})" if listing.image_url else ""
-        sjsu = destination_distance(listing, "sjsu")
-        villa = destination_distance(listing, "villa_sport")
-        lam = destination_distance(listing, "lam_research")
-        northrop = destination_distance(listing, "northrop_grumman")
-        lines.append(
-            f"| {rank} | {photo} | {item_verdict} | {score} | ${listing.rent:,} | {listing.bedrooms}/{listing.bathrooms:g} | {listing.sqft:,} | {listing.home_type} | {listing.city} | {address} | {md_link(listing, 'sjsu', fmt_distance(sjsu))} | {md_link(listing, 'villa_sport', fmt_distance(villa))} | {fmt_commute(villa_commute_minutes(villa))} | {md_link(listing, 'lam_research', fmt_distance(lam))} | {md_link(listing, 'northrop_grumman', fmt_drive(northrop))} | {'; '.join(reasons)} |"
-        )
+        sjsu = destination_distance(listing, "sjsu"); villa = destination_distance(listing, "villa_sport"); lam = destination_distance(listing, "lam_research"); northrop = destination_distance(listing, "northrop_grumman")
+        lines.append(f"| {rank} | {photo} | {item_verdict} | {score} | ${listing.rent:,} | {listing.bedrooms}/{listing.bathrooms:g} | {listing.sqft:,} | {listing.home_type} | {listing.city} | {address} | {md_link(listing, 'sjsu', fmt_distance(sjsu))} | {md_link(listing, 'villa_sport', fmt_distance(villa))} | {fmt_commute(villa_commute_minutes(villa))} | {md_link(listing, 'lam_research', fmt_distance(lam))} | {md_link(listing, 'northrop_grumman', fmt_drive(northrop))} | {'; '.join(reasons)} |")
     return "\n".join(lines) + "\n"
 
 
 def html_report(listings: list[Listing]) -> str:
     rows = []
     for rank, (score, item_verdict, listing, reasons) in enumerate(ranked_listings(listings), start=1):
-        sjsu = destination_distance(listing, "sjsu")
-        villa = destination_distance(listing, "villa_sport")
-        lam = destination_distance(listing, "lam_research")
-        northrop = destination_distance(listing, "northrop_grumman")
+        sjsu = destination_distance(listing, "sjsu"); villa = destination_distance(listing, "villa_sport"); lam = destination_distance(listing, "lam_research"); northrop = destination_distance(listing, "northrop_grumman")
         zillow_link = f'<a class="listing-link" href="{html.escape(listing.url, quote=True)}" target="_blank" rel="noopener noreferrer">Open Zillow</a>' if listing.url else "No link"
-        rows.append(
-            "<tr>"
-            f"<td>{rank}</td><td>{photo_html(listing)}</td><td><span class='verdict {item_verdict.lower().replace(' ', '-')}'>{item_verdict}</span></td><td>{score}</td>"
-            f"<td>${listing.rent:,}</td><td>{listing.bedrooms}/{listing.bathrooms:g}</td><td>{listing.sqft:,}</td><td>{html.escape(listing.home_type)}</td><td>{html.escape(listing.city)}</td><td>{html.escape(listing.address)}</td><td>{zillow_link}</td>"
-            f"<td>{html_link(listing, 'sjsu', fmt_distance(sjsu))}</td><td>{html_link(listing, 'villa_sport', fmt_distance(villa))}</td><td>{fmt_commute(villa_commute_minutes(villa))}</td><td>{html_link(listing, 'lam_research', fmt_distance(lam))}</td><td>{html_link(listing, 'northrop_grumman', fmt_drive(northrop))}</td><td>{html.escape('; '.join(reasons))}</td></tr>"
-        )
-    return f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Zillow Rental Screening Report</title><style>
-:root{{color-scheme:light;font-family:Arial,Helvetica,sans-serif;background:#f5f7f8;color:#1f2933}}body{{margin:0;padding:32px}}main{{max-width:1280px;margin:0 auto}}table{{width:100%;border-collapse:collapse;background:#fff;border:1px solid #d9e2ec}}th,td{{padding:12px;border-bottom:1px solid #d9e2ec;text-align:left;vertical-align:top;font-size:14px}}th{{background:#e6f0f2;color:#243b53;font-weight:700}}.photo{{display:block;width:132px;aspect-ratio:4/3;object-fit:cover;border-radius:8px;border:1px solid #d9e2ec}}.no-photo{{color:#829ab1}}.verdict{{display:inline-block;min-width:86px;padding:4px 8px;border-radius:6px;text-align:center;font-weight:700;white-space:nowrap}}.top-fit{{background:#d8f3dc;color:#1b5e20}}.worth-touring{{background:#fff3bf;color:#6c4f00}}.maybe{{background:#dbeafe;color:#1e3a8a}}.reject{{background:#ffd7d7;color:#8a1f1f}}.listing-link,.maps-link{{color:#0b6b75;font-weight:700;white-space:nowrap}}
-</style></head><body><main><h1>Zillow Rental Screening Report</h1><table><thead><tr><th>Rank</th><th>Photo</th><th>Verdict</th><th>Score</th><th>Rent</th><th>Beds/Baths</th><th>Sqft</th><th>Type</th><th>City</th><th>Address</th><th>Zillow</th><th>SJSU</th><th>VillaSport</th><th>Villa Commute</th><th>Lam Research</th><th>Northrop Drive</th><th>Notes</th></tr></thead><tbody>{''.join(rows)}</tbody></table></main></body></html>"""
+        rows.append("<tr>" + f"<td>{rank}</td><td>{photo_html(listing)}</td><td><span class='verdict {item_verdict.lower().replace(' ', '-')}'>{item_verdict}</span></td><td>{score}</td><td>${listing.rent:,}</td><td>{listing.bedrooms}/{listing.bathrooms:g}</td><td>{listing.sqft:,}</td><td>{html.escape(listing.home_type)}</td><td>{html.escape(listing.city)}</td><td>{html.escape(listing.address)}</td><td>{zillow_link}</td><td>{html_link(listing, 'sjsu', fmt_distance(sjsu))}</td><td>{html_link(listing, 'villa_sport', fmt_distance(villa))}</td><td>{fmt_commute(villa_commute_minutes(villa))}</td><td>{html_link(listing, 'lam_research', fmt_distance(lam))}</td><td>{html_link(listing, 'northrop_grumman', fmt_drive(northrop))}</td><td>{html.escape('; '.join(reasons))}</td></tr>")
+    return f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Jon's Zillow Rental Screening Report</title><style>:root{{font-family:Arial,Helvetica,sans-serif;background:#f5f7f8;color:#1f2933}}body{{margin:0;padding:32px}}main{{max-width:1280px;margin:0 auto}}table{{width:100%;border-collapse:collapse;background:#fff;border:1px solid #d9e2ec}}th,td{{padding:12px;border-bottom:1px solid #d9e2ec;text-align:left;vertical-align:top;font-size:14px}}th{{background:#e6f0f2}}.photo{{display:block;width:132px;aspect-ratio:4/3;object-fit:cover;border-radius:8px;border:1px solid #d9e2ec}}.verdict{{display:inline-block;min-width:86px;padding:4px 8px;border-radius:6px;text-align:center;font-weight:700}}.top-fit{{background:#d8f3dc;color:#1b5e20}}.worth-touring{{background:#fff3bf;color:#6c4f00}}.maybe{{background:#dbeafe;color:#1e3a8a}}.reject{{background:#ffd7d7;color:#8a1f1f}}.listing-link,.maps-link{{color:#0b6b75;font-weight:700}}</style></head><body><main><h1>Jon's Zillow Rental Screening Report</h1><p>Default criteria: {html.escape(CRITERIA)}</p><table><thead><tr><th>Rank</th><th>Photo</th><th>Verdict</th><th>Score</th><th>Rent</th><th>Beds/Baths</th><th>Sqft</th><th>Type</th><th>City</th><th>Address</th><th>Zillow</th><th>SJSU</th><th>VillaSport</th><th>Villa Commute</th><th>Lam Research</th><th>Northrop Drive</th><th>Notes</th></tr></thead><tbody>{''.join(rows)}</tbody></table></main></body></html>"""
 
 
 def main() -> None:
