@@ -1,0 +1,23 @@
+{
+  "generatedAt": null,
+  "source": "RentCast rental listings API",
+  "criteria": {
+    "cities": [
+      "San Jose",
+      "Milpitas",
+      "Fremont"
+    ],
+    "state": "CA",
+    "rent": "$3,000-$5,000",
+    "minimumSqft": 1200,
+    "layouts": [
+      "3bd/2ba",
+      "4bd+/2ba"
+    ],
+    "homeTypes": [
+      "Single Family",
+      "Townhouse"
+    ]
+  },
+  "listings": []
+}
